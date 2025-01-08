@@ -45,7 +45,6 @@
 				"     skipDuplicateMapOutputs: true) ~> geographyoutputdata",
 				"geographyoutputdata sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
-				"     filePattern:'geographyoutputdata',",
 				"     umask: 0022,",
 				"     preCommands: [],",
 				"     postCommands: [],",
