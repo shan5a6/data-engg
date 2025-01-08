@@ -1,0 +1,9 @@
+{
+	"name": "ksrdemo-dev-adf",
+	"location": "eastus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "a4f8ac8c-7b70-4e2e-91ef-f0e048e422a8",
+		"tenantId": "12fc3214-7a7c-4252-baac-cfdb550601a8"
+	}
+}
