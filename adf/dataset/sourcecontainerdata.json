@@ -1,0 +1,34 @@
+{
+	"name": "sourcecontainerdata",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "sourcecontainerlinkservice",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Excel",
+		"typeProperties": {
+			"sheetName": "Geography",
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": "Geography.xlsx",
+				"fileSystem": "sourcecontainer"
+			},
+			"firstRowAsHeader": true
+		},
+		"schema": [
+			{
+				"name": "Country",
+				"type": "String"
+			},
+			{
+				"name": "Town",
+				"type": "String"
+			},
+			{
+				"name": "Wikipedia",
+				"type": "String"
+			}
+		]
+	}
+}

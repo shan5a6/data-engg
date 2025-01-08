@@ -1,0 +1,58 @@
+{
+	"name": "dataflow1",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "sourcecontainerdata",
+						"type": "DatasetReference"
+					},
+					"name": "geographyinputdata"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "destinationcontainerdata",
+						"type": "DatasetReference"
+					},
+					"name": "syncdatatodestinationcontainer"
+				}
+			],
+			"transformations": [
+				{
+					"name": "geographyoutputdata"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          Country as string,",
+				"          Town as string,",
+				"          Wikipedia as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     partitionBy('hash', 1)) ~> geographyinputdata",
+				"geographyinputdata select(mapColumn(",
+				"          Country,",
+				"          Town",
+				"     ),",
+				"     partitionBy('hash', 1),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> geographyoutputdata",
+				"geographyoutputdata sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     filePattern:'geographyoutputdata',",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     partitionBy('hash', 1)) ~> syncdatatodestinationcontainer"
+			]
+		}
+	}
+}
