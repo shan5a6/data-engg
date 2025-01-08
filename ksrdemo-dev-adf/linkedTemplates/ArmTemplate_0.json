@@ -1,0 +1,203 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "ksrdemo-dev-adf"
+		},
+		"destinationcontainerlinkservice_accountKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accountKey' of 'destinationcontainerlinkservice'"
+		},
+		"sourcecontainerlinkservice_accountKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accountKey' of 'sourcecontainerlinkservice'"
+		},
+		"destinationcontainerlinkservice_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://demodataenggdev.dfs.core.windows.net/"
+		},
+		"sourcecontainerlinkservice_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://demodataenggdev.dfs.core.windows.net/"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/default')]",
+			"type": "Microsoft.DataFactory/factories/globalparameters",
+			"apiVersion": "2018-06-01",
+			"properties": {},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/destinationcontainerlinkservice')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobFS",
+				"typeProperties": {
+					"url": "[parameters('destinationcontainerlinkservice_properties_typeProperties_url')]",
+					"accountKey": {
+						"type": "SecureString",
+						"value": "[parameters('destinationcontainerlinkservice_accountKey')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/sourcecontainerlinkservice')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobFS",
+				"typeProperties": {
+					"url": "[parameters('sourcecontainerlinkservice_properties_typeProperties_url')]",
+					"accountKey": {
+						"type": "SecureString",
+						"value": "[parameters('sourcecontainerlinkservice_accountKey')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/destinationcontainerdata')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "destinationcontainerlinkservice",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileSystem": "destinationcontainer"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/destinationcontainerlinkservice')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/sourcecontainerdata')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "sourcecontainerlinkservice",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "Excel",
+				"typeProperties": {
+					"sheetName": "Geography",
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": "Geography.xlsx",
+						"fileSystem": "sourcecontainer"
+					},
+					"firstRowAsHeader": true
+				},
+				"schema": [
+					{
+						"name": "Country",
+						"type": "String"
+					},
+					{
+						"name": "Town",
+						"type": "String"
+					},
+					{
+						"name": "Wikipedia",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/sourcecontainerlinkservice')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/dataflow1')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "sourcecontainerdata",
+								"type": "DatasetReference"
+							},
+							"name": "geographyinputdata"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "destinationcontainerdata",
+								"type": "DatasetReference"
+							},
+							"name": "syncdatatodestinationcontainer"
+						}
+					],
+					"transformations": [
+						{
+							"name": "geographyoutputdata"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          Country as string,",
+						"          Town as string,",
+						"          Wikipedia as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false,",
+						"     partitionBy('hash', 1)) ~> geographyinputdata",
+						"geographyinputdata select(mapColumn(",
+						"          Country,",
+						"          Town",
+						"     ),",
+						"     partitionBy('hash', 1),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> geographyoutputdata",
+						"geographyoutputdata sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     filePattern:'geographyoutputdata',",
+						"     umask: 0022,",
+						"     preCommands: [],",
+						"     postCommands: [],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     partitionBy('hash', 1)) ~> syncdatatodestinationcontainer"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/sourcecontainerdata')]",
+				"[concat(variables('factoryId'), '/datasets/destinationcontainerdata')]"
+			]
+		}
+	]
+}
