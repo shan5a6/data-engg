@@ -1,5 +1,5 @@
 {
-	"name": "pipeline1",
+	"name": "processdata",
 	"properties": {
 		"activities": [
 			{
@@ -13,9 +13,10 @@
 					"secureOutput": false,
 					"secureInput": false
 				},
+				"userProperties": [],
 				"typeProperties": {
 					"dataflow": {
-						"referenceName": "dataflow1",
+						"referenceName": "dataconvertion",
 						"type": "DataFlowReference"
 					},
 					"compute": {
